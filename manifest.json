@@ -3,7 +3,7 @@
 	"name": "Frontmatter Links",
 	"version": "0.0.1",
 	"minAppVersion": "1.0.0",
-	"description": "TODO",
+	"description": "Renders links in a note's frontmatter as links.",
 	"author": "Dion Tryban (Trikzon)",
 	"authorUrl": "https://github.com/Trikzon",
 	"isDesktopOnly": false
