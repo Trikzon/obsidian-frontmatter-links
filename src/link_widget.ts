@@ -1,6 +1,6 @@
 import { EditorView, WidgetType } from "@codemirror/view";
 
-export class ClickableLinkWidget extends WidgetType {
+export class FrontmatterLinkWidget extends WidgetType {
     private href: string;
     private alias: string;
     private internal: boolean;

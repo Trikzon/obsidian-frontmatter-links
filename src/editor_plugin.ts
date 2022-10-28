@@ -1,7 +1,7 @@
 import { syntaxTree } from "@codemirror/language";
 import { RangeSetBuilder } from "@codemirror/state";
 import { Decoration, DecorationSet, EditorView, PluginValue, ViewPlugin, ViewUpdate } from "@codemirror/view";
-import { ClickableLinkWidget } from "./clickable_link_widget";
+import { FrontmatterLinkWidget } from "./link_widget";
 import { isUri } from "valid-url";
 
 export class FrontmatterLinksEditorPlugin implements PluginValue {
@@ -28,11 +28,7 @@ export class FrontmatterLinksEditorPlugin implements PluginValue {
                 to,
                 enter(node) {
                     if (node.name === "hmd-frontmatter_string") {
-                        let text = view.state.sliceDoc(node.from + 1, node.to - 1);
-                        let selectedLine = view.lineBlockAt(view.state.selection.main.head);
-
-                        // If cursor is on the same line as the link.
-                        // if (selectedLine.from <= node.from && selectedLine.to >= node.to) {
+                        const text = view.state.sliceDoc(node.from + 1, node.to - 1);
 
                         let href = null;
                         let alias = null;
@@ -56,13 +52,22 @@ export class FrontmatterLinksEditorPlugin implements PluginValue {
 
                         if (href) {
                             alias = !alias ? href : alias;
-                            if (selectedLine.from <= node.from && selectedLine.to >= node.to) {
+                            const cursorHead = view.state.selection.main.head;
+                            if (node.from - 1 <= cursorHead && cursorHead <= node.to + 1) {
+                                // TODO: When the cursor is next to or on the link, style it like Obsidian does.
+                                builder.add(
+                                    node.from + 1,
+                                    node.to - 1,
+                                    Decoration.mark({
+                                        class: "cm-url"
+                                    })
+                                )
                             } else {
                                 builder.add(
                                     node.from,
                                     node.to,
                                     Decoration.replace({
-                                        widget: new ClickableLinkWidget(href, alias, isUri(href) === undefined)
+                                        widget: new FrontmatterLinkWidget(href, alias, isUri(href) === undefined)
                                     })
                                 )
                             }
@@ -76,6 +81,6 @@ export class FrontmatterLinksEditorPlugin implements PluginValue {
     }
 }
 
-export const EDITOR_PLUGIN = ViewPlugin.fromClass(FrontmatterLinksEditorPlugin, {
+export const FRONTMATTER_LINKS_EDITOR_PLUGIN = ViewPlugin.fromClass(FrontmatterLinksEditorPlugin, {
     decorations: (value: FrontmatterLinksEditorPlugin) => value.decorations
 });
