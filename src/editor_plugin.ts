@@ -28,29 +28,41 @@ export class FrontmatterLinksEditorPlugin implements PluginValue {
                 to,
                 enter(node) {
                     if (node.name === "hmd-frontmatter_string") {
-                        let linkText = view.state.sliceDoc(node.from + 1, node.to - 1);
+                        let text = view.state.sliceDoc(node.from + 1, node.to - 1);
                         let selectedLine = view.lineBlockAt(view.state.selection.main.head);
 
                         // If cursor is on the same line as the link.
-                        if (selectedLine.from <= node.from && selectedLine.to >= node.to) {
-                        } else {
-                            // If text is Obsidian wiki link
-                            if (linkText.substring(0, 2) === "[[" && linkText.substring(linkText.length - 2) === "]]") {
-                                let href = linkText.substring(2, linkText.length - 2);
-                                let innerText = href;
+                        // if (selectedLine.from <= node.from && selectedLine.to >= node.to) {
+
+                        let href = null;
+                        let alias = null;
+                        if (text.substring(0, 2) === "[[" && text.substring(text.length - 2) === "]]") {
+                            href = text.substring(2, text.length - 2);
+                            const aliasIndex = href.indexOf("|");
+                            if (aliasIndex !== -1) {
+                                alias = href.substring(aliasIndex + 1);
+                                href = href.substring(0, aliasIndex);
+                            }
+                        } else if (text[0] === "[" && text[text.length - 1] === ")") {
+                            const aliasClose = text.indexOf("]");
+                            const hrefOpen = text.indexOf("(");
+                            if (aliasClose !== -1 && hrefOpen !== -1) {
+                                alias = text.substring(1, aliasClose);
+                                href = text.substring(hrefOpen + 1, text.length - 1);
+                            }
+                        } else if (isUri(text)) {
+                            href = text;
+                        }
+
+                        if (href) {
+                            alias = !alias ? href : alias;
+                            if (selectedLine.from <= node.from && selectedLine.to >= node.to) {
+                            } else {
                                 builder.add(
                                     node.from,
                                     node.to,
                                     Decoration.replace({
-                                        widget: new ClickableLinkWidget(href, innerText, true)
-                                    })
-                                );
-                            } else if (isUri(linkText)) {
-                                builder.add(
-                                    node.from,
-                                    node.to,
-                                    Decoration.replace({
-                                        widget: new ClickableLinkWidget(linkText, linkText, false)
+                                        widget: new ClickableLinkWidget(href, alias, isUri(href) === undefined)
                                     })
                                 )
                             }
