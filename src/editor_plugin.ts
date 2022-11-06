@@ -107,15 +107,19 @@ export class FrontmatterLinksEditorPlugin implements PluginValue {
                         if (node.name == "hmd-frontmatter") {
                             const text = view.state.sliceDoc(node.from, node.to);
 
-                            for (const urlPrefix of ["http", "https", "file"]) {
-                                if (text == urlPrefix) {
-                                    linkFrom = node.from;
-                                    linkTo = node.to;
-                                    break;
-                                } else if (text.endsWith(" " + urlPrefix)) {
-                                    linkFrom = node.to - urlPrefix.length;
-                                    linkTo = node.to;
-                                    break;
+                            const matchWithoutTrailingColon = [...text.matchAll(/(?<=^|\s)(http|https|file)$/g)][0];
+
+                            if (matchWithoutTrailingColon) {
+                                linkFrom = node.from + (matchWithoutTrailingColon.index as number);
+                                linkTo = node.to;
+                            } else {
+                                const matchesWithFullUrl = [...text.matchAll(/(?<=^|\s)((?:http|https|file):\S+)/g)]
+
+                                for (let match of matchesWithFullUrl) {
+                                    linkFrom = node.from + (match.index as number);
+                                    linkTo = linkFrom + match[1].length;
+                                    plugin.processLink(view, builder, linkFrom, linkTo, false);
+                                    linkFrom = null;
                                 }
                             }
                         }
