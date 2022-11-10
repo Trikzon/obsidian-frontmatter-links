@@ -8,7 +8,7 @@ A small [Obsidian](https://obsidian.md/) plugin that recognizes links, wikilinks
 ![image](https://user-images.githubusercontent.com/29845000/201154480-00c71a82-12f4-450a-b00c-8d643b014b05.png)
 
 ## Installation
-- Available in the [Obsidian Plugin Marketplace](obsidian://show-plugin?id=frontmatter-links)!
+- Available in the [Obsidian Plugin Marketplace](https://obsidian.md/plugins?id=frontmatter-links)!
 - Use the [Brat](https://github.com/TfTHacker/obsidian42-brat) plugin.
 
 ## Support
