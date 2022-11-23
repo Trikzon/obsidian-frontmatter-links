@@ -22,10 +22,6 @@ function addFrontmatterLinksToCache(file: TFile, frontmatter: any) {
 
             if (isUri(href)) { continue; }
 
-            if (!href.match(/.+\.md/m)) {
-                href += ".md";
-            }
-
             let f = app.metadataCache.getFirstLinkpathDest(href, "");
             let links: Record<string, Record<string, number>>;
             if (f instanceof TFile) {
