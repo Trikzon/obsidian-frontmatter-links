@@ -5,6 +5,8 @@ import { Decoration, DecorationSet, EditorView, PluginValue, ViewPlugin, ViewUpd
 import { FrontmatterLinkWidget } from "./link_widget";
 import { isUri } from "valid-url";
 import { LinkSlice } from "./link_slice";
+import { FrontmatterLinksSettings } from "./settings";
+import { TFile } from "obsidian";
 
 export class FrontmatterLinksEditorPlugin implements PluginValue {
     decorations: DecorationSet;
@@ -36,7 +38,7 @@ export class FrontmatterLinksEditorPlugin implements PluginValue {
 
     findLinks(view: EditorView, linkSlices: Array<LinkSlice>) {
         // TODO: Find a way to access the plugins through the editor plugin's constructor instead.
-        const settings = app.plugins.plugins["frontmatter-links"].settings;
+        const settings: FrontmatterLinksSettings = app.plugins.plugins["frontmatter-links"].settings;
 
         let externalLinkFrom: number | null;
         let externalLinkTo: number;
@@ -76,6 +78,7 @@ export class FrontmatterLinksEditorPlugin implements PluginValue {
                         let match: RegExpMatchArray | null;
                         let href: string | undefined;
                         let alias: string | undefined;
+                        let markdownLink: boolean | undefined;
                         if (match = text.match(/\[\[(.+)\|(.+)\]\]/m)) {
                             href = match[1];
                             alias = match[2];
@@ -84,6 +87,7 @@ export class FrontmatterLinksEditorPlugin implements PluginValue {
                         } else if (match = text.match(/\[(.+)\]\((.+)\)/m)) {
                             href = match[2];
                             alias = match[1];
+                            markdownLink = true;
                         } else if (isUri(text)) {
                             href = text;
                         }
@@ -93,7 +97,8 @@ export class FrontmatterLinksEditorPlugin implements PluginValue {
                                 href,
                                 alias,
                                 from: node.from + (settings.hideQuotes ? 0 : 1),
-                                to: node.to - (settings.hideQuotes ? 0 : 1)
+                                to: node.to - (settings.hideQuotes ? 0 : 1),
+                                markdownLink
                             });
                         }
                     }
@@ -103,17 +108,11 @@ export class FrontmatterLinksEditorPlugin implements PluginValue {
     }
 
     processLinks(view: EditorView, builder: RangeSetBuilder<Decoration>) {
-        const settings = app.plugins.plugins["frontmatter-links"].settings;
-
         for (let linkSlice of this.linkSlices) {
             const cursorHead = view.state.selection.main.head;
+
             if (linkSlice.from - 1 <= cursorHead && cursorHead <= linkSlice.to + 1) {
-                // TODO: When the cursor is next to or on the link, style it like Obsidian does.
-                builder.add(
-                    linkSlice.from,
-                    linkSlice.to,
-                    Decoration.mark({ class: "cm-url" })
-                );
+                this.styleLink(view, builder, linkSlice);
             } else {
                 builder.add(
                     linkSlice.from,
@@ -121,6 +120,91 @@ export class FrontmatterLinksEditorPlugin implements PluginValue {
                     Decoration.replace({ widget: new FrontmatterLinkWidget(linkSlice) })
                 );
             }
+        }
+    }
+
+    styleLink(view: EditorView, builder: RangeSetBuilder<Decoration>, linkSlice: LinkSlice) {
+        // TODO: Clean up this code. I'm not sure that's possible though.
+        const settings: FrontmatterLinksSettings = app.plugins.plugins["frontmatter-links"].settings;
+        const unresolved = !(app.vault.getAbstractFileByPath(linkSlice.href) instanceof TFile);
+        const text = view.state.sliceDoc(linkSlice.from, linkSlice.to);
+
+        let match: RegExpMatchArray | null;
+        if (match = text.match(/\[\[(.+)\|(.+)\]\]/m)) {
+            builder.add(
+                linkSlice.from + (settings.hideQuotes ? 1 : 0),
+                linkSlice.from + 2 + (settings.hideQuotes ? 1 : 0),
+                Decoration.mark({ class: "cm-formatting-link cm-formatting-link-start" })
+            );
+            builder.add(
+                linkSlice.from + text.indexOf(match[1]),
+                linkSlice.from + text.indexOf(match[1]) + match[1].length,
+                Decoration.mark({ class: "cm-link" + (unresolved ? " is-unresolved" : "") })
+            );
+            builder.add(
+                linkSlice.from + text.indexOf(match[1]) + match[1].length,
+                linkSlice.from + text.indexOf(match[1]) + match[1].length + 1,
+                Decoration.mark({ class: "cm-hmd-internal-link" })
+            );
+            builder.add(
+                linkSlice.from + text.indexOf(match[2]),
+                linkSlice.from + text.indexOf(match[2]) + match[2].length,
+                Decoration.mark({ class: "cm-link" + (unresolved ? " is-unresolved" : "") })
+            );
+            builder.add(
+                linkSlice.to - 2 - (settings.hideQuotes ? 1 : 0),
+                linkSlice.to - (settings.hideQuotes ? 1 : 0),
+                Decoration.mark({ class: "cm-formatting-link cm-formatting-link-end" })
+            );
+        } else if (match = text.match(/\[\[(.+)\]\]/m)) {
+            builder.add(
+                linkSlice.from + (settings.hideQuotes ? 1 : 0),
+                linkSlice.from + 2 + (settings.hideQuotes ? 1 : 0),
+                Decoration.mark({ class: "cm-formatting-link cm-formatting-link-start" })
+            );
+            builder.add(
+                linkSlice.from + text.indexOf(match[1]),
+                linkSlice.from + text.indexOf(match[1]) + match[1].length,
+                Decoration.mark({ class: "cm-link" + (unresolved ? " is-unresolved" : "") })
+            );
+            builder.add(
+                linkSlice.to - 2 - (settings.hideQuotes ? 1 : 0),
+                linkSlice.to - (settings.hideQuotes ? 1 : 0),
+                Decoration.mark({ class: "cm-formatting-link cm-formatting-link-end" })
+            );
+        } else if (match = text.match(/\[(.+)\](\(.+\))/m)) {
+            builder.add(
+                linkSlice.from + (settings.hideQuotes ? 1 : 0),
+                linkSlice.from + 1 + (settings.hideQuotes ? 1 : 0),
+                Decoration.mark({ class: "cm-formatting-link cm-formatting-link-start" })
+            );
+            builder.add(
+                linkSlice.from + text.indexOf(match[1]),
+                linkSlice.from + text.indexOf(match[1]) + match[1].length,
+                Decoration.mark({ class: "cm-link" })
+            );
+            builder.add(
+                linkSlice.from + text.indexOf("]"),
+                linkSlice.from + text.indexOf("]") + 1,
+                Decoration.mark({ class: "cm-formatting-link cm-formatting-link-end" })
+            );
+            builder.add(
+                linkSlice.from + text.indexOf(match[2]),
+                linkSlice.from + text.indexOf(match[2]) + match[2].length,
+                Decoration.mark({ class: "cm-url" })
+            );
+        } else if (match = text.match(/\"(.+)\"/m)) {
+            builder.add(
+                linkSlice.from + text.indexOf(match[1]),
+                linkSlice.from + text.indexOf(match[1]) + match[1].length,
+                Decoration.mark({ class: "cm-url" })
+            );
+        } else if (isUri(text)) {
+            builder.add(
+                linkSlice.from,
+                linkSlice.to,
+                Decoration.mark({ class: "cm-url" })
+            );
         }
     }
 }

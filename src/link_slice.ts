@@ -4,4 +4,5 @@ export interface LinkSlice {
     alias?: string;
     from: number;
     to: number;
+    markdownLink?: boolean;
 }
