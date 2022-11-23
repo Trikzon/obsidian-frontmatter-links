@@ -16,20 +16,7 @@ export class FrontmatterLinksEditorPlugin implements PluginValue {
     }
 
     update(update: ViewUpdate): void {
-        if (update.selectionSet) {
-            if (this.linkSlices.length === 0) {
-                this.decorations = this.buildDecorations(update.view);
-            } else {
-                for (let linkSlice of this.linkSlices) {
-                    const cursorHead = update.view.state.selection.main.head;
-                    if (linkSlice.from - 1 <= cursorHead && cursorHead <= linkSlice.to + 1) {
-                        this.decorations = this.buildDecorations(update.view);
-                        console.log("rebuild");
-                        break;
-                    }
-                }
-            }
-        } else if (update.docChanged || update.viewportChanged) {
+        if (update.docChanged || update.viewportChanged || update.selectionSet) {
             this.decorations = this.buildDecorations(update.view);
         }
     }
@@ -37,7 +24,6 @@ export class FrontmatterLinksEditorPlugin implements PluginValue {
     destroy() { }
 
     buildDecorations(view: EditorView): DecorationSet {
-        console.log("build");
         const builder = new RangeSetBuilder<Decoration>();
         this.linkSlices = new Array<LinkSlice>();
 
@@ -117,6 +103,8 @@ export class FrontmatterLinksEditorPlugin implements PluginValue {
     }
 
     processLinks(view: EditorView, builder: RangeSetBuilder<Decoration>) {
+        const settings = app.plugins.plugins["frontmatter-links"].settings;
+
         for (let linkSlice of this.linkSlices) {
             const cursorHead = view.state.selection.main.head;
             if (linkSlice.from - 1 <= cursorHead && cursorHead <= linkSlice.to + 1) {
