@@ -191,7 +191,7 @@ export class FrontmatterLinksEditorPlugin implements PluginValue {
             builder.add(
                 linkSlice.from + text.indexOf(match[2]),
                 linkSlice.from + text.indexOf(match[2]) + match[2].length,
-                Decoration.mark({ class: "cm-url" })
+                Decoration.mark({ class: isUri(linkSlice.href) ? "external-link" : "cm-url" })
             );
         } else if (match = text.match(/\"(.+)\"/m)) {
             builder.add(
