@@ -6,4 +6,8 @@ declare module "obsidian" {
             plugins: any
         }
     }
+
+    interface MetadataCache {
+        initialize(): any,
+    }
 }

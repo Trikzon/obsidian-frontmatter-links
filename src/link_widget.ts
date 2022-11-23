@@ -21,7 +21,7 @@ export class FrontmatterLinkWidget extends WidgetType {
         } else {
             aElement.addClass("internal-link");
 
-            if (!(app.vault.getAbstractFileByPath(this.linkSlice.href) instanceof TFile) && !this.linkSlice.markdownLink) {
+            if (!((app.vault.getAbstractFileByPath(this.linkSlice.href) || app.vault.getAbstractFileByPath(this.linkSlice.href + ".md")) instanceof TFile) && !this.linkSlice.markdownLink) {
                 aElement.addClass("is-unresolved");
             }
         }
