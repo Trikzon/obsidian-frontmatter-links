@@ -5,9 +5,11 @@ import { Decoration, DecorationSet, EditorView, PluginValue, ViewPlugin, ViewUpd
 import { FrontmatterLinkWidget } from "./link_widget";
 import { isUri } from "valid-url";
 import { LinkSlice } from "./link_slice";
+import FrontmatterLinksPlugin from "./main";
 
 export class FrontmatterLinksEditorPlugin implements PluginValue {
     decorations: DecorationSet;
+    plugin: FrontmatterLinksPlugin;
 
     constructor(view: EditorView) {
         this.decorations = this.buildDecorations(view);
@@ -33,6 +35,9 @@ export class FrontmatterLinksEditorPlugin implements PluginValue {
     }
 
     findLinks(view: EditorView, linkSlices: Array<LinkSlice>) {
+        // TODO: Find a way to access the plugins through the editor plugin's constructor instead.
+        const settings = app.plugins.plugins["frontmatter-links"].settings;
+
         let externalLinkFrom: number | null;
         let externalLinkTo: number;
 
@@ -87,8 +92,8 @@ export class FrontmatterLinksEditorPlugin implements PluginValue {
                                 originalText: text,
                                 href,
                                 alias,
-                                from: node.from + 1,
-                                to: node.to - 1
+                                from: node.from + (settings.hideQuotes ? 0 : 1),
+                                to: node.to - (settings.hideQuotes ? 0 : 1)
                             });
                         }
                     }
