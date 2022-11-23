@@ -25,15 +25,14 @@ export class FrontmatterLinksEditorPlugin implements PluginValue {
         const builder = new RangeSetBuilder<Decoration>();
         const linkSlices = new Array<LinkSlice>();
 
-        this.findLinksWithoutQuotes(view, linkSlices);
-        this.findLinksWithQuotes(view, linkSlices);
+        this.findLinks(view, linkSlices);
 
         this.processLinks(view, linkSlices, builder);
 
         return builder.finish();
     }
 
-    findLinksWithoutQuotes(view: EditorView, linkSlices: Array<LinkSlice>) {
+    findLinks(view: EditorView, linkSlices: Array<LinkSlice>) {
         let externalLinkFrom: number | null;
         let externalLinkTo: number;
 
@@ -42,6 +41,7 @@ export class FrontmatterLinksEditorPlugin implements PluginValue {
                 from,
                 to,
                 enter(node: SyntaxNodeRef) {
+                    // Find links outside of quotes.
                     if (externalLinkFrom === null) {
                         if (node.name === "hmd-frontmatter") {
                             externalLinkFrom = node.from;
@@ -63,17 +63,8 @@ export class FrontmatterLinksEditorPlugin implements PluginValue {
                             externalLinkTo = node.to;
                         }
                     }
-                }
-            });
-        }
-    }
 
-    findLinksWithQuotes(view: EditorView, linkSlices: Array<LinkSlice>) {
-        for (let { from, to } of view.visibleRanges) {
-            syntaxTree(view.state).iterate({
-                from,
-                to,
-                enter(node: SyntaxNodeRef) {
+                    // Find links inside of quotes.
                     if (node.name === "hmd-frontmatter_string") {
                         const text = view.state.sliceDoc(node.from + 1, node.to - 1);
 
