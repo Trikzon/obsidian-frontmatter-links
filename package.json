@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-frontmatter-links",
-	"version": "1.2.2",
+	"version": "1.2.3",
 	"description": "Renders links in a note's frontmatter as links.",
 	"main": "main.js",
 	"scripts": {

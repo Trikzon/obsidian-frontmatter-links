@@ -126,7 +126,7 @@ export class FrontmatterLinksEditorPlugin implements PluginValue {
     styleLink(view: EditorView, builder: RangeSetBuilder<Decoration>, linkSlice: LinkSlice) {
         // TODO: Clean up this code. I'm not sure that's possible though.
         const settings: FrontmatterLinksSettings = app.plugins.plugins["frontmatter-links"].settings;
-        const unresolved = !((app.vault.getAbstractFileByPath(linkSlice.href) || app.vault.getAbstractFileByPath(linkSlice.href + ".md")) instanceof TFile);
+        const unresolved = !(app.metadataCache.getFirstLinkpathDest(linkSlice.href, "") instanceof TFile);
         const text = view.state.sliceDoc(linkSlice.from, linkSlice.to);
 
         let match: RegExpMatchArray | null;

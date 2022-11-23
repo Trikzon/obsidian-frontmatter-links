@@ -1,7 +1,7 @@
 {
 	"id": "frontmatter-links",
 	"name": "Frontmatter Links",
-	"version": "1.2.2-beta",
+	"version": "1.2.3-beta",
 	"minAppVersion": "1.0.0",
 	"description": "Renders links in a note's frontmatter as links.",
 	"author": "Dion Tryban (Trikzon)",

@@ -20,19 +20,25 @@ function addFrontmatterLinksToCache(file: TFile, frontmatter: any) {
             if (!match) { continue; }
             let href = match[1];
 
+            if (isUri(href)) { continue; }
+
             if (!href.match(/.+\.md/m)) {
                 href += ".md";
             }
 
-            if (isUri(href)) { continue; }
-
-            const unresolved = !(app.vault.getAbstractFileByPath(href) instanceof TFile);
-            const links = unresolved ? app.metadataCache.unresolvedLinks : app.metadataCache.resolvedLinks;
-
-            if (links[file.name][href]) {
-                links[file.name][href] += 1;
+            let f = app.metadataCache.getFirstLinkpathDest(href, "");
+            let links: Record<string, Record<string, number>>;
+            if (f instanceof TFile) {
+                href = f.path;
+                links = app.metadataCache.resolvedLinks;
             } else {
-                links[file.name][href] = 1;
+                links = app.metadataCache.unresolvedLinks;
+            }
+
+            if (links[file.path][href]) {
+                links[file.path][href] += 1;
+            } else {
+                links[file.path][href] = 1;
             }
         } else if (typeof(value) === "object") {
             addFrontmatterLinksToCache(file, value);

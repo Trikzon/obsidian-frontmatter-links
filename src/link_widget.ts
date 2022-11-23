@@ -1,5 +1,5 @@
 import { EditorView, WidgetType } from "@codemirror/view";
-import { TFile, Vault } from "obsidian";
+import { TFile } from "obsidian";
 import { isUri } from "valid-url";
 import { LinkSlice } from "./link_slice";
 
@@ -21,7 +21,7 @@ export class FrontmatterLinkWidget extends WidgetType {
         } else {
             aElement.addClass("internal-link");
 
-            if (!((app.vault.getAbstractFileByPath(this.linkSlice.href) || app.vault.getAbstractFileByPath(this.linkSlice.href + ".md")) instanceof TFile) && !this.linkSlice.markdownLink) {
+            if (!(app.metadataCache.getFirstLinkpathDest(this.linkSlice.href, "") instanceof TFile) && !this.linkSlice.markdownLink) {
                 aElement.addClass("is-unresolved");
             }
         }

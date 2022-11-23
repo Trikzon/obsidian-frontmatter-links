@@ -6,13 +6,19 @@ export function onVaultFileRename(file: TFile, oldPath: string, plugin: Frontmat
     for (let fileName of Object.keys(app.metadataCache.resolvedLinks)) {
         const links = app.metadataCache.resolvedLinks[fileName];
 
-        if (links[oldPath]) {
-            const f = app.vault.getAbstractFileByPath(fileName);
+		let oldName = oldPath;
+		let match: RegExpMatchArray | null = oldPath.match(/.+\/(.+\.md)/m);
+		if (match) {
+			oldName = match[1];
+		}
+
+        if (links[oldName]) {
+            const f = app.metadataCache.getFirstLinkpathDest(fileName, "");
             if (f instanceof TFile) {
                 const frontmatter = getFrontmatterOfTFile(f, plugin);
                 renameFrontmatterLinks(
                     frontmatter,
-                    oldPath.substring(0, oldPath.length - 3),
+                    oldName.substring(0, oldName.length - 3),
                     file.name.substring(0, file.name.length - 3)
                 );
                 setFrontmatterOfTFile(frontmatter, f, plugin);
@@ -23,7 +29,6 @@ export function onVaultFileRename(file: TFile, oldPath: string, plugin: Frontmat
 }
 
 function renameFrontmatterLinks(frontmatter: any, oldName: string, newName: string) {
-    console.log(oldName, newName);
 	for (let key of Object.keys(frontmatter)) {
 		const value = frontmatter[key];
 		if (typeof(value) === "string") {
