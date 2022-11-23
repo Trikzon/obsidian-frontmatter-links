@@ -21,7 +21,7 @@ export class FrontmatterLinksSettingTab extends PluginSettingTab {
 
     display() {
         new Setting(this.containerEl)
-            .setName("Hide Quotation Marks")
+            .setName("Hide quotation marks")
             .setDesc("Don't render quotation marks surrounding frontmatter links.")
             .addToggle((component: ToggleComponent) => {
                 component.setValue(this.plugin.settings.hideQuotes);
@@ -32,7 +32,7 @@ export class FrontmatterLinksSettingTab extends PluginSettingTab {
             });
         
         new Setting(this.containerEl)
-            .setName("Add to Graph")
+            .setName("Add to graph")
             .setDesc("Add frontmatter link connections to the graph view.")
             .addToggle((component: ToggleComponent) => {
                 component.setValue(this.plugin.settings.addToGraph);

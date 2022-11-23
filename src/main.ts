@@ -1,6 +1,7 @@
 import { Plugin, TFile } from 'obsidian';
 import { FRONTMATTER_LINKS_EDITOR_PLUGIN } from './editor_plugin';
 import { onMetadataCacheResolve } from './metadata_cache';
+import { onVaultFileRename } from './rename_links';
 import { DEFAULT_SETTINGS, FrontmatterLinksSettings, FrontmatterLinksSettingTab } from './settings';
 
 export default class FrontmatterLinksPlugin extends Plugin {
@@ -21,6 +22,12 @@ export default class FrontmatterLinksPlugin extends Plugin {
 			if (!plugin.settings.addToGraph) { return; }
 
 			onMetadataCacheResolve(file);
+		}));
+
+		this.registerEvent(app.vault.on("rename", (file: TFile, oldPath: string) => {
+			if (app.vault.getConfig("alwaysUpdateLinks")) {
+				onVaultFileRename(file, oldPath, plugin);
+			}
 		}));
 	}
 
