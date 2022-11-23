@@ -1,22 +1,20 @@
 import { EditorView, WidgetType } from "@codemirror/view";
+import { isUri } from "valid-url";
+import { LinkSlice } from "./link_slice";
 
 export class FrontmatterLinkWidget extends WidgetType {
-    private href: string;
-    private alias: string;
-    private internal: boolean;
+    private link: LinkSlice;
 
-    constructor(href: string, alias: string, internal: boolean) {
+    constructor(link: LinkSlice) {
         super()
-        this.href = href;
-        this.alias = alias;
-        this.internal = internal;
+        this.link = link;
     }
 
     toDOM(view: EditorView): HTMLElement {
         const aElement = document.createElement("a");
-        aElement.href = this.href;
-        aElement.innerText = this.alias;
-        aElement.className = this.internal ? "internal-link" : "external-link";
+        aElement.href = this.link.href;
+        aElement.innerText = this.link.alias || this.link.href;
+        aElement.className = isUri(this.link.href) ? "external-link" : "internal-link";
         return aElement;
     }
 }

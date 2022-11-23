@@ -26,6 +26,7 @@
 		"@codemirror/language": "^6.3.0",
 		"@codemirror/state": "^6.1.2",
 		"@codemirror/view": "^6.4.0",
+		"@lezer/common": "^1.0.1",
 		"valid-url": "^1.0.9"
 	}
 }

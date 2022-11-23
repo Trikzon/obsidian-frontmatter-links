@@ -1,8 +1,10 @@
 import { syntaxTree } from "@codemirror/language";
 import { RangeSetBuilder } from "@codemirror/state";
+import { SyntaxNodeRef } from "@lezer/common"
 import { Decoration, DecorationSet, EditorView, PluginValue, ViewPlugin, ViewUpdate } from "@codemirror/view";
 import { FrontmatterLinkWidget } from "./link_widget";
 import { isUri } from "valid-url";
+import { LinkSlice } from "./link_slice";
 
 export class FrontmatterLinksEditorPlugin implements PluginValue {
     decorations: DecorationSet;
@@ -19,116 +21,109 @@ export class FrontmatterLinksEditorPlugin implements PluginValue {
 
     destroy() { }
 
-    processLink(view: EditorView, builder: RangeSetBuilder<Decoration>, from: number, to: number, includesQuotes: boolean) {
-        const linkFrom = includesQuotes ? from + 1 : from;
-        const linkTo = includesQuotes ? to - 1 : to;
-        const text = view.state.sliceDoc(linkFrom, linkTo);
-
-        let href = null;
-        let alias = null;
-        if (text.substring(0, 2) === "[[" && text.substring(text.length - 2) === "]]") {
-            href = text.substring(2, text.length - 2);
-            const aliasIndex = href.indexOf("|");
-            if (aliasIndex !== -1) {
-                alias = href.substring(aliasIndex + 1);
-                href = href.substring(0, aliasIndex);
-            }
-        } else if (text[0] === "[" && text[text.length - 1] === ")") {
-            const aliasClose = text.indexOf("]");
-            const hrefOpen = text.indexOf("(");
-            if (aliasClose !== -1 && hrefOpen !== -1) {
-                alias = text.substring(1, aliasClose);
-                href = text.substring(hrefOpen + 1, text.length - 1);
-            }
-        } else if (isUri(text)) {
-            href = text;
-        }
-
-        if (href) {
-            alias = !alias ? href : alias;
-            const cursorHead = view.state.selection.main.head;
-            if (from - 1 <= cursorHead && cursorHead <= to + 1) {
-                // TODO: When the cursor is next to or on the link, style it like Obsidian does.
-                builder.add(
-                    linkFrom,
-                    linkTo,
-                    Decoration.mark({
-                        class: "cm-url"
-                    })
-                )
-            } else {
-                builder.add(
-                    from,
-                    to,
-                    Decoration.replace({
-                        widget: new FrontmatterLinkWidget(href, alias, isUri(href) === undefined)
-                    })
-                )
-            }
-        }
-    }
-
     buildDecorations(view: EditorView): DecorationSet {
         const builder = new RangeSetBuilder<Decoration>();
-        const plugin = this;
+        const linkSlices = new Array<LinkSlice>();
 
-        let linkFrom: number | null;
-        let linkTo: number;
+        this.findLinksWithoutQuotes(view, linkSlices);
+        this.findLinksWithQuotes(view, linkSlices);
+
+        this.processLinks(view, linkSlices, builder);
+
+        return builder.finish();
+    }
+
+    findLinksWithoutQuotes(view: EditorView, linkSlices: Array<LinkSlice>) {
+        let externalLinkFrom: number | null;
+        let externalLinkTo: number;
 
         for (let { from, to } of view.visibleRanges) {
             syntaxTree(view.state).iterate({
                 from,
                 to,
-                enter(node) {
-                    if (linkFrom) {
+                enter(node: SyntaxNodeRef) {
+                    if (externalLinkFrom === null) {
                         if (node.name === "hmd-frontmatter") {
-                            const text = view.state.sliceDoc(node.from, node.to);
-                            const spaceIndex = text.indexOf(" ");
-                            if (spaceIndex !== -1) {
-                                linkTo = node.from + spaceIndex;
-                                plugin.processLink(view, builder, linkFrom, linkTo, false);
-                                linkFrom = null;
-                            } else {
-                                linkTo = node.to;
+                            externalLinkFrom = node.from;
+                            externalLinkTo = node.to;
+                        }
+                    } else {
+                        if (node.name === "atom_hmd-frontmatter" || node.name === "def_hmd-frontmatter") {
+                            let text = view.state.sliceDoc(externalLinkFrom, externalLinkTo);
+                            if (isUri(text)) {
+                                linkSlices.push({
+                                    originalText: text,
+                                    href: text,
+                                    from: externalLinkFrom,
+                                    to: externalLinkTo
+                                });
                             }
-                        } else if (node.name == "hmd-frontmatter_meta") {
-                            linkTo = node.to;
+                            externalLinkFrom = null;
                         } else {
-                            plugin.processLink(view, builder, linkFrom, linkTo, false);
-                            linkFrom = null;
-                        }
-                    }
-
-                    if (!linkFrom) {
-                        if (node.name === "hmd-frontmatter_string") {
-                            plugin.processLink(view, builder, node.from, node.to, true);
-                        }
-                        
-                        if (node.name == "hmd-frontmatter") {
-                            const text = view.state.sliceDoc(node.from, node.to);
-
-                            const matchWithoutTrailingColon = [...text.matchAll(/(?<=^|\s)(http|https|file)$/g)][0];
-
-                            if (matchWithoutTrailingColon) {
-                                linkFrom = node.from + (matchWithoutTrailingColon.index as number);
-                                linkTo = node.to;
-                            } else {
-                                const matchesWithFullUrl = [...text.matchAll(/(?<=^|\s)((?:http|https|file):\S+)/g)]
-
-                                for (let match of matchesWithFullUrl) {
-                                    linkFrom = node.from + (match.index as number);
-                                    linkTo = linkFrom + match[1].length;
-                                    plugin.processLink(view, builder, linkFrom, linkTo, false);
-                                    linkFrom = null;
-                                }
-                            }
+                            externalLinkTo = node.to;
                         }
                     }
                 }
             });
         }
+    }
 
-        return builder.finish();
+    findLinksWithQuotes(view: EditorView, linkSlices: Array<LinkSlice>) {
+        for (let { from, to } of view.visibleRanges) {
+            syntaxTree(view.state).iterate({
+                from,
+                to,
+                enter(node: SyntaxNodeRef) {
+                    if (node.name === "hmd-frontmatter_string") {
+                        const text = view.state.sliceDoc(node.from + 1, node.to - 1);
+
+                        let match: RegExpMatchArray | null;
+                        let href: string | undefined;
+                        let alias: string | undefined;
+                        if (match = text.match(/\[\[(.+)\|(.+)\]\]/m)) {
+                            href = match[1];
+                            alias = match[2];
+                        } else if (match = text.match(/\[\[(.+)\]\]/m)) {
+                            href = match[1];
+                        } else if (match = text.match(/\[(.+)\]\((.+)\)/m)) {
+                            href = match[2];
+                            alias = match[1];
+                        } else if (isUri(text)) {
+                            href = text;
+                        }
+                        if (href) {
+                            linkSlices.push({
+                                originalText: text,
+                                href,
+                                alias,
+                                from: node.from + 1,
+                                to: node.to - 1
+                            });
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    processLinks(view: EditorView, linkSlices: Array<LinkSlice>, builder: RangeSetBuilder<Decoration>) {
+        for (let linkSlice of linkSlices) {
+            const cursorHead = view.state.selection.main.head;
+            if (linkSlice.from - 1 <= cursorHead && cursorHead <= linkSlice.to + 1) {
+                // TODO: When the cursor is next to or on the link, style it like Obsidian does.
+                builder.add(
+                    linkSlice.from,
+                    linkSlice.to,
+                    Decoration.mark({ class: "cm-url" })
+                );
+            } else {
+                builder.add(
+                    linkSlice.from,
+                    linkSlice.to,
+                    Decoration.replace({ widget: new FrontmatterLinkWidget(linkSlice) })
+                );
+            }
+        }
     }
 }
 
