@@ -12,7 +12,7 @@ export function onVaultFileRename(file: TFile, oldPath: string, plugin: Frontmat
 			oldName = match[1];
 		}
 
-        if (links[oldName]) {
+        if (links[oldPath]) {
             const f = app.metadataCache.getFirstLinkpathDest(fileName, "");
             if (f instanceof TFile) {
                 const frontmatter = getFrontmatterOfTFile(f, plugin);
