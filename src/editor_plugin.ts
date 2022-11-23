@@ -5,18 +5,31 @@ import { Decoration, DecorationSet, EditorView, PluginValue, ViewPlugin, ViewUpd
 import { FrontmatterLinkWidget } from "./link_widget";
 import { isUri } from "valid-url";
 import { LinkSlice } from "./link_slice";
-import FrontmatterLinksPlugin from "./main";
 
 export class FrontmatterLinksEditorPlugin implements PluginValue {
     decorations: DecorationSet;
-    plugin: FrontmatterLinksPlugin;
+    linkSlices: Array<LinkSlice> = new Array();
 
     constructor(view: EditorView) {
+        this.linkSlices = new Array<LinkSlice>();
         this.decorations = this.buildDecorations(view);
     }
 
     update(update: ViewUpdate): void {
-        if (update.docChanged || update.viewportChanged || update.selectionSet) {
+        if (update.selectionSet) {
+            if (this.linkSlices.length === 0) {
+                this.decorations = this.buildDecorations(update.view);
+            } else {
+                for (let linkSlice of this.linkSlices) {
+                    const cursorHead = update.view.state.selection.main.head;
+                    if (linkSlice.from - 1 <= cursorHead && cursorHead <= linkSlice.to + 1) {
+                        this.decorations = this.buildDecorations(update.view);
+                        console.log("rebuild");
+                        break;
+                    }
+                }
+            }
+        } else if (update.docChanged || update.viewportChanged) {
             this.decorations = this.buildDecorations(update.view);
         }
     }
@@ -24,12 +37,13 @@ export class FrontmatterLinksEditorPlugin implements PluginValue {
     destroy() { }
 
     buildDecorations(view: EditorView): DecorationSet {
+        console.log("build");
         const builder = new RangeSetBuilder<Decoration>();
-        const linkSlices = new Array<LinkSlice>();
+        this.linkSlices = new Array<LinkSlice>();
 
-        this.findLinks(view, linkSlices);
+        this.findLinks(view, this.linkSlices);
 
-        this.processLinks(view, linkSlices, builder);
+        this.processLinks(view, builder);
 
         return builder.finish();
     }
@@ -102,8 +116,8 @@ export class FrontmatterLinksEditorPlugin implements PluginValue {
         }
     }
 
-    processLinks(view: EditorView, linkSlices: Array<LinkSlice>, builder: RangeSetBuilder<Decoration>) {
-        for (let linkSlice of linkSlices) {
+    processLinks(view: EditorView, builder: RangeSetBuilder<Decoration>) {
+        for (let linkSlice of this.linkSlices) {
             const cursorHead = view.state.selection.main.head;
             if (linkSlice.from - 1 <= cursorHead && cursorHead <= linkSlice.to + 1) {
                 // TODO: When the cursor is next to or on the link, style it like Obsidian does.

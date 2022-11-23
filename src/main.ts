@@ -1,6 +1,5 @@
-import { EditorView, ViewPlugin } from '@codemirror/view';
 import { Plugin } from 'obsidian';
-import { FrontmatterLinksEditorPlugin, FRONTMATTER_LINKS_EDITOR_PLUGIN } from './editor_plugin';
+import { FRONTMATTER_LINKS_EDITOR_PLUGIN } from './editor_plugin';
 import { DEFAULT_SETTINGS, FrontmatterLinksSettings, FrontmatterLinksSettingTab } from './settings';
 
 export default class FrontmatterLinksPlugin extends Plugin {
