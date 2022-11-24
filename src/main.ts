@@ -25,7 +25,7 @@ export default class FrontmatterLinksPlugin extends Plugin {
 		}));
 
 		this.registerEvent(app.vault.on("rename", (file: TFile, oldPath: string) => {
-			if (app.vault.getConfig("alwaysUpdateLinks")) {
+			if (plugin.settings.updateLinks && app.vault.getConfig("alwaysUpdateLinks")) {
 				onVaultFileRename(file, oldPath, plugin);
 			}
 		}));
