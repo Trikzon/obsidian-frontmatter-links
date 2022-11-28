@@ -12,6 +12,7 @@ export function onMetadataCacheResolve(file: TFile) {
 }
 
 function addFrontmatterLinksToCache(file: TFile, frontmatter: any) {
+    if (!frontmatter) { return; }
     for (let key of Object.keys(frontmatter)) {
         const value = frontmatter[key];
         if (typeof(value) === "string") {
