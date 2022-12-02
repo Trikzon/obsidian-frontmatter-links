@@ -54,9 +54,13 @@ export class FrontmatterLinksSettingTab extends PluginSettingTab {
                         "Turn on to update frontmatter links when a note is renamed." 
                     );
                     el.createEl("br");
+                    // el.createEl("div", {
+                    //     cls: "mod-warning",
+                    //     text: "'Automatically update internal links' in 'Files & Links' must also be enabled."
+                    // });
                     el.createEl("div", {
                         cls: "mod-warning",
-                        text: "'Automatically update internal links' in 'Files & Links' must also be enabled."
+                        text: "Disabled because it was causing issues. Will fix next week after finals. Sorry."
                     });
                 })
             )
@@ -66,7 +70,8 @@ export class FrontmatterLinksSettingTab extends PluginSettingTab {
                     this.plugin.settings.updateLinks = value;
                     this.plugin.saveSettings();
                 });
-            });
+            })
+            .setDisabled(true);
     }
 
     hide() {
