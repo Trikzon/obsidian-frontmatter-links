@@ -55,7 +55,7 @@ export class FrontmatterLinksEditorPlugin implements PluginValue {
                             externalLinkTo = node.to;
                         }
                     } else {
-                        if (node.name === "atom_hmd-frontmatter" || node.name === "def_hmd-frontmatter") {
+                        if (node.name === "atom_hmd-frontmatter" || node.name === "def_hmd-frontmatter" || (node.name === "hmd-frontmatter_meta" && node.to - node.from > 1)) {
                             let text = view.state.sliceDoc(externalLinkFrom, externalLinkTo);
                             if (isUri(text)) {
                                 linkSlices.push({
